@@ -21,6 +21,15 @@ const productSchema = new mongoose.Schema({
   caracteristiques: [caracteristiqueSchema],            // ex: [{ nom: 'Écran', valeur: '6.1"' }]
   noteMoyenne: { type: Number, default: 0, min: 0, max: 5 },
   nbAvis: { type: Number, default: 0, min: 0 },
+  seuilAlerteStock: { type: Number, default: 5, min: 0 },
+  archive: { type: Boolean, default: false },
+  promotion: {
+    active: { type: Boolean, default: false },
+    pourcentage: { type: Number, default: 0, min: 0, max: 90 },
+    prixPromo: { type: Number, default: 0 },
+    dateDebut: { type: Date },
+    dateFin: { type: Date }
+  },
   boutique: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',

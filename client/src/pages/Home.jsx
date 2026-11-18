@@ -11,19 +11,32 @@ export default function Home() {
   const [params, setParams] = useSearchParams();
   const search = params.get('search') || '';
   const categorie = params.get('categorie') || '';
+  const boutique = params.get('boutique') || '';
   const minPrice = params.get('minPrice') || '';
   const maxPrice = params.get('maxPrice') || '';
-  const isFiltering = Boolean(search || categorie || minPrice || maxPrice);
+  const isFiltering = Boolean(search || categorie || boutique || minPrice || maxPrice);
 
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [sortBy, setSortBy] = useState('featured');
   const [prices, setPrices] = useState({ min: minPrice, max: maxPrice });
   const [toast, setToast] = useState('');
+  const [shopInfo, setShopInfo] = useState(null);
 
   const { user } = useAuth();
   const { addToCart } = useCart();
   const navigate = useNavigate();
+
+  // Charger le nom de la boutique si sélectionnée
+  useEffect(() => {
+    if (boutique) {
+      api.get(`/shops/${boutique}`)
+        .then(({ data }) => setShopInfo(data.data))
+        .catch(() => setShopInfo(null));
+    } else {
+      setShopInfo(null);
+    }
+  }, [boutique]);
 
   // Chargement des produits à chaque changement de filtre (URL)
   useEffect(() => {
@@ -31,7 +44,7 @@ export default function Home() {
       setLoading(true);
       try {
         const query = Object.fromEntries(
-          Object.entries({ search, categorie, minPrice, maxPrice }).filter(([, v]) => v)
+          Object.entries({ search, categorie, boutique, minPrice, maxPrice }).filter(([, v]) => v)
         );
         const { data } = await api.get('/products', { params: query });
         setProducts(data.data || []);
@@ -44,7 +57,7 @@ export default function Home() {
     };
     load();
     setPrices({ min: minPrice, max: maxPrice });
-  }, [search, categorie, minPrice, maxPrice]);
+  }, [search, categorie, boutique, minPrice, maxPrice]);
 
   const showToast = (msg) => {
     setToast(msg);
@@ -101,11 +114,14 @@ const handleAddToCart = async (product, color = '') => {
   );
 
   const catLabel = CATEGORIES.find((c) => c.value === categorie)?.label || categorie;
-  const title = search
-    ? `Résultats pour « ${search} »`
-    : categorie
-    ? catLabel
-    : 'Tous les produits';
+  let title = 'Tous les produits';
+  if (shopInfo) {
+    title = `Boutique : ${shopInfo.nom}${categorie ? ` › ${catLabel}` : ''}`;
+  } else if (search) {
+    title = `Résultats pour « ${search} »`;
+  } else if (categorie) {
+    title = catLabel;
+  }
 
   return (
     <div className="home">

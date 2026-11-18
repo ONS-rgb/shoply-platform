@@ -8,8 +8,9 @@ export default function Profile() {
   const { user, updateUser } = useAuth();
 
   const [info, setInfo] = useState({
-    nom: '', prenom: '', telephone: '', avatar: ''
+    nom: '', prenom: '', email: '', telephone: '', avatar: ''
   });
+  const [accountDetails, setAccountDetails] = useState(null);
   const [adresses, setAdresses] = useState([]);
   const [pwd, setPwd] = useState({ motDePasseActuel: '', nouveauMotDePasse: '', confirmation: '' });
   const [infoMsg, setInfoMsg] = useState({ type: '', text: '' });
@@ -29,9 +30,11 @@ export default function Profile() {
     api.get('/auth/me')
       .then(({ data }) => {
         const u = data.data;
+        setAccountDetails(u);
         setInfo({
           nom: u.nom || '',
           prenom: u.prenom || '',
+          email: u.email || '',
           telephone: u.telephone || '',
           avatar: u.avatar || ''
         });
@@ -176,8 +179,13 @@ export default function Profile() {
           </div>
 
           <div className="field">
-            <label>Email (identifiant)</label>
-            <input value={user?.email || ''} disabled />
+            <label>Adresse e-mail (identifiant)</label>
+            <input
+              type="email"
+              value={info.email}
+              onChange={(e) => setInfo({ ...info, email: e.target.value })}
+              required
+            />
           </div>
 
           <div className="row2">
@@ -222,6 +230,31 @@ export default function Profile() {
 
           <button type="submit" className="btn-orange">Changer le mot de passe</button>
         </form>
+
+        {/* ===== DÉTAILS DU COMPTE (UML: Voir détail) ===== */}
+        <div className="box" style={{ gridColumn: '1 / -1', background: '#f8fafc', border: '1px solid #e2e8f0' }}>
+          <h2 style={{ marginTop: 0, fontSize: 18, color: '#0F172A', display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span>ℹ️</span> Détails du compte
+          </h2>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16 }}>
+            <div style={{ background: '#fff', padding: 14, borderRadius: 8, border: '1px solid #e2e8f0' }}>
+              <span className="muted" style={{ fontSize: 12, display: 'block' }}>RÔLE DU COMPTE</span>
+              <strong style={{ fontSize: 15, textTransform: 'capitalize', color: '#F97316' }}>{user?.role || 'Client'}</strong>
+            </div>
+            <div style={{ background: '#fff', padding: 14, borderRadius: 8, border: '1px solid #e2e8f0' }}>
+              <span className="muted" style={{ fontSize: 12, display: 'block' }}>STATUT DU COMPTE</span>
+              <strong style={{ fontSize: 15, color: '#16a34a' }}>● Actif & Vérifié</strong>
+            </div>
+            <div style={{ background: '#fff', padding: 14, borderRadius: 8, border: '1px solid #e2e8f0' }}>
+              <span className="muted" style={{ fontSize: 12, display: 'block' }}>IDENTIFIANT UNIQUE</span>
+              <code style={{ fontSize: 13, color: '#475569' }}>{user?._id || '—'}</code>
+            </div>
+            <div style={{ background: '#fff', padding: 14, borderRadius: 8, border: '1px solid #e2e8f0' }}>
+              <span className="muted" style={{ fontSize: 12, display: 'block' }}>ADRESSES ENREGISTRÉES</span>
+              <strong style={{ fontSize: 15 }}>{adresses.length} adresse(s)</strong>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* ===== CARNET D'ADRESSES DE LIVRAISON (STYLE AMAZON) ===== */}

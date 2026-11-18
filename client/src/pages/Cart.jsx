@@ -96,9 +96,13 @@ export default function Cart() {
                         <button disabled={quantite <= 1}
                           onClick={() => run(() => updateQty(_id, quantite - 1))}>−</button>
                         <span>{quantite}</span>
-                        <button disabled={quantite >= produit.stock}
+                        <button disabled={produit.stock <= 0}
+                          title={produit.stock <= 0 ? 'Stock épuisé' : `Ajouter (restant : ${produit.stock})`}
                           onClick={() => run(() => updateQty(_id, quantite + 1))}>+</button>
                       </div>
+                      <span style={{ fontSize: 12, color: produit.stock > 0 ? '#16a34a' : '#dc2626' }}>
+                        {produit.stock > 0 ? `(${produit.stock} restant${produit.stock > 1 ? 's' : ''})` : '(Stock épuisé)'}
+                      </span>
                       <button className="link-btn" onClick={() => run(() => removeItem(_id))}>
                         Supprimer
                       </button>

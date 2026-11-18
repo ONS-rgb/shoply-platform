@@ -160,7 +160,9 @@ export default function ProductDetail() {
     if (!canOrder()) return;
     try {
       await addToCart(product._id, qty, color);
-      setMsg({ type: 'ok', text: '✅ Produit ajouté au panier' });
+      setMsg({ type: 'ok', text: '✅ Produit réservé dans le panier (stock mis à jour)' });
+      setProduct((prev) => (prev ? { ...prev, stock: Math.max(0, prev.stock - qty) } : prev));
+      setQty(1);
     } catch (err) {
       setMsg({ type: 'error', text: err.response?.data?.message || "Erreur lors de l'ajout" });
     }
@@ -175,6 +177,8 @@ export default function ProductDetail() {
       setMsg({ type: 'error', text: err.response?.data?.message || 'Erreur' });
     }
   };
+
+  const handleAddToCart = handleAdd;
 
   // Soumission d'un avis
   const handleReviewSubmit = async (e) => {
@@ -220,6 +224,10 @@ export default function ProductDetail() {
     }
   };
 
+  const hasPromo = Boolean(product.enPromotion || (product.promotion?.active && product.promotion?.pourcentage > 0));
+  const promoPercent = product.promotion?.pourcentage || (product.enPromotion && product.prix && product.prixFinal ? Math.round((1 - product.prixFinal / product.prix) * 100) : 0);
+  const promoPrice = product.prixFinal || product.promotion?.prixPromo || (hasPromo ? Math.round((product.prix * (1 - promoPercent / 100)) * 100) / 100 : product.prix);
+
   const availability = outOfStock ? (
     <p className="prod-stock out" style={{ fontSize: 18 }}>Rupture de stock</p>
   ) : product.stock < 10 ? (
@@ -235,9 +243,53 @@ export default function ProductDetail() {
       </div>
 
       <div className="box pd">
-        {/* ===== GALERIE D'IMAGES AVEC BASULEMENT PAR COULEUR ===== */}
+        {/* ===== COLONNE GAUCHE : BOUTONS AU-DESSUS DE LA PHOTO + GALERIE ===== */}
         <div>
-          <div className="pd-main">
+          {/* Les deux boutons au-dessus de la photo */}
+          <div className="prod-actions-top" style={{ marginBottom: 14 }}>
+            <button
+              type="button"
+              className="prod-btn-commander"
+              disabled={outOfStock}
+              onClick={handleBuyNow}
+            >
+              Commander
+            </button>
+            <button
+              type="button"
+              className="prod-btn-panier"
+              disabled={outOfStock}
+              onClick={handleAdd}
+            >
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="9" cy="21" r="1" />
+                <circle cx="20" cy="21" r="1" />
+                <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
+              </svg>
+              Ajouter au panier
+            </button>
+          </div>
+
+          <div className="pd-main" style={{ position: 'relative' }}>
+            {hasPromo && promoPercent > 0 && (
+              <span
+                style={{
+                  position: 'absolute',
+                  top: 12,
+                  left: 12,
+                  background: '#dc2626',
+                  color: '#fff',
+                  padding: '4px 10px',
+                  borderRadius: 6,
+                  fontSize: 14,
+                  fontWeight: 800,
+                  zIndex: 2,
+                  boxShadow: '0 2px 8px rgba(220,38,38,0.4)'
+                }}
+              >
+                -{promoPercent}%
+              </span>
+            )}
             <img
               src={mainImage}
               alt={product.nom}
@@ -282,7 +334,23 @@ export default function ProductDetail() {
             </p>
           )}
 
-          <div className="big-price">{Number(product.prix).toFixed(2)} TND</div>
+          {hasPromo ? (
+            <div style={{ margin: '10px 0 8px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <span className="big-price" style={{ color: '#dc2626', margin: 0 }}>
+                  {Number(promoPrice).toFixed(2)} TND
+                </span>
+                <span style={{ background: '#dc2626', color: '#fff', padding: '3px 8px', borderRadius: 6, fontSize: 13, fontWeight: 800 }}>
+                  -{promoPercent}%
+                </span>
+              </div>
+              <div style={{ fontSize: 14, color: '#6b7280', marginTop: 4 }}>
+                Prix initial : <span style={{ textDecoration: 'line-through' }}>{Number(product.prix).toFixed(2)} TND</span>
+              </div>
+            </div>
+          ) : (
+            <div className="big-price">{Number(product.prix).toFixed(2)} TND</div>
+          )}
           {availability}
 
           {/* SÉLECTION DE COULEUR (AVEC CHANGEMENT D'IMAGE INSTANTANÉ) */}
@@ -334,7 +402,23 @@ export default function ProductDetail() {
 
         {/* ===== BLOC D'ACHAT (BUYBOX) ===== */}
         <aside className="buybox">
-          <div className="big-price" style={{ marginTop: 0 }}>{Number(product.prix).toFixed(2)} TND</div>
+          {hasPromo ? (
+            <div style={{ marginTop: 0, marginBottom: 8 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span className="big-price" style={{ color: '#dc2626', margin: 0 }}>
+                  {Number(promoPrice).toFixed(2)} TND
+                </span>
+                <span style={{ background: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca', padding: '2px 6px', borderRadius: 4, fontSize: 12, fontWeight: 700 }}>
+                  -{promoPercent}%
+                </span>
+              </div>
+              <div style={{ fontSize: 13, color: '#9ca3af', textDecoration: 'line-through', marginTop: 2 }}>
+                {Number(product.prix).toFixed(2)} TND
+              </div>
+            </div>
+          ) : (
+            <div className="big-price" style={{ marginTop: 0 }}>{Number(product.prix).toFixed(2)} TND</div>
+          )}
           {availability}
 
           <div style={{ fontSize: 13, color: '#4b5563', margin: '10px 0', lineHeight: 1.4 }}>
@@ -532,6 +616,24 @@ export default function ProductDetail() {
                     <p style={{ margin: '4px 0', fontSize: 14, color: '#374151', lineHeight: 1.5, whiteSpace: 'pre-line' }}>
                       {rev.commentaire}
                     </p>
+
+                    {rev.reponseVendeur?.texte && (
+                      <div style={{ marginTop: 12, marginLeft: 16, padding: '10px 14px', background: '#f8fafc', borderRadius: 8, borderLeft: '4px solid #F97316' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+                          <span style={{ fontSize: 13, fontWeight: 700, color: '#c2410c' }}>
+                            🏪 Réponse de la boutique {sellerName ? `(${sellerName})` : ''}
+                          </span>
+                          {rev.reponseVendeur.dateReponse && (
+                            <span style={{ fontSize: 11, color: '#94a3b8' }}>
+                              {new Date(rev.reponseVendeur.dateReponse).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })}
+                            </span>
+                          )}
+                        </div>
+                        <p style={{ margin: 0, fontSize: 13, color: '#334155', lineHeight: 1.5, whiteSpace: 'pre-line' }}>
+                          {rev.reponseVendeur.texte}
+                        </p>
+                      </div>
+                    )}
 
                     {isOwnReview && (
                       <div style={{ marginTop: 8, display: 'flex', gap: 14, fontSize: 13 }}>

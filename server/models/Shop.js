@@ -27,10 +27,24 @@ const shopSchema = new mongoose.Schema({
     type: String,
     default: ''
   },
+  email: {
+    type: String,
+    default: ''
+  },
+  adresse: {
+    rue: { type: String, default: '' },
+    ville: { type: String, default: '' },
+    codePostal: { type: String, default: '' },
+    pays: { type: String, default: 'Tunisie' }
+  },
   statut: {
     type: String,
-    enum: ['en_attente', 'approuvee', 'suspendue'],
-    default: 'approuvee'
+    enum: ['active', 'inactive', 'fermee_temporairement', 'en_attente', 'approuvee', 'acceptee', 'refusee', 'suspendue'],
+    default: 'active'
+  },
+  motifFermeture: {
+    type: String,
+    default: ''
   }
 }, { timestamps: true });
 

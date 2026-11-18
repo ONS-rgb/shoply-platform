@@ -2,6 +2,8 @@ const mongoose = require('mongoose');
 const Review = require('../models/Review');
 const Product = require('../models/Product');
 const Order = require('../models/Order');
+const Notification = require('../models/Notification');
+const Shop = require('../models/Shop');
 
 // Fonction utilitaire pour recalculer la moyenne des notes d'un produit
 const updateProductRating = async (productId) => {
@@ -26,6 +28,23 @@ const updateProductRating = async (productId) => {
       noteMoyenne: 0,
       nbAvis: 0
     });
+  }
+};
+
+// GET /api/reviews/my : Obtenir tous les avis rédigés par le client connecté
+exports.getMyReviews = async (req, res) => {
+  try {
+    const reviews = await Review.find({ client: req.user._id })
+      .populate('produit', 'nom images prix categorie noteMoyenne nbAvis')
+      .sort({ createdAt: -1 });
+
+    res.json({
+      success: true,
+      count: reviews.length,
+      data: reviews
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 
@@ -185,6 +204,132 @@ exports.deleteReview = async (req, res) => {
     await updateProductRating(productId);
 
     res.json({ success: true, message: 'Avis supprimé' });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// GET /api/reviews/seller : Avis sur les produits du vendeur
+exports.getSellerReviews = async (req, res) => {
+  try {
+    const shops = await Shop.find({ proprietaire: req.user._id }).select('_id');
+    const sellerIds = [req.user._id, ...shops.map((s) => s._id)];
+
+    const products = await Product.find({ boutique: { $in: sellerIds } }).select('_id nom');
+    const productIds = products.map((p) => p._id);
+
+    const reviews = await Review.find({ produit: { $in: productIds } })
+      .populate('client', 'nom prenom avatar email')
+      .populate('produit', 'nom images prix categorie')
+      .sort({ createdAt: -1 });
+
+    res.json({
+      success: true,
+      count: reviews.length,
+      data: reviews
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// POST /api/reviews/:id/reply : Répondre à un avis client
+exports.replyToReview = async (req, res) => {
+  try {
+    if (!mongoose.isValidObjectId(req.params.id)) {
+      return res.status(404).json({ success: false, message: 'Avis introuvable' });
+    }
+
+    const review = await Review.findById(req.params.id);
+    if (!review) {
+      return res.status(404).json({ success: false, message: 'Avis introuvable' });
+    }
+
+    const product = await Product.findById(review.produit);
+    if (!product) {
+      return res.status(404).json({ success: false, message: 'Produit associé non trouvé' });
+    }
+
+    const shops = await Shop.find({ proprietaire: req.user._id }).select('_id');
+    const sellerIds = [req.user._id.toString(), ...shops.map((s) => s._id.toString())];
+
+    if (!sellerIds.includes(product.boutique.toString()) && req.user.role !== 'admin') {
+      return res.status(403).json({ success: false, message: 'Ce produit ne vous appartient pas' });
+    }
+
+    const { texte } = req.body;
+    if (!texte || !texte.trim()) {
+      return res.status(400).json({ success: false, message: 'Veuillez saisir votre réponse' });
+    }
+
+    review.reponseVendeur = {
+      texte: texte.trim(),
+      dateReponse: new Date(),
+      vendeur: req.user._id
+    };
+
+    await review.save();
+    await review.populate('client', 'nom prenom avatar');
+    await review.populate('produit', 'nom images prix');
+
+    // Notifier le client
+    await Notification.create({
+      destinataire: review.client._id || review.client,
+      titre: 'Réponse à votre avis',
+      message: `Le vendeur a répondu à votre avis sur le produit "${product.nom}".`,
+      type: 'avis',
+      lien: `/product/${product._id}#reviews`
+    });
+
+    res.json({
+      success: true,
+      message: 'Réponse publiée avec succès',
+      data: review
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// DELETE /api/reviews/:id/reply : Supprimer sa réponse
+exports.deleteReviewReply = async (req, res) => {
+  try {
+    if (!mongoose.isValidObjectId(req.params.id)) {
+      return res.status(404).json({ success: false, message: 'Avis introuvable' });
+    }
+
+    const review = await Review.findById(req.params.id);
+    if (!review) {
+      return res.status(404).json({ success: false, message: 'Avis introuvable' });
+    }
+
+    const product = await Product.findById(review.produit);
+    if (!product) {
+      return res.status(404).json({ success: false, message: 'Produit associé non trouvé' });
+    }
+
+    const shops = await Shop.find({ proprietaire: req.user._id }).select('_id');
+    const sellerIds = [req.user._id.toString(), ...shops.map((s) => s._id.toString())];
+
+    if (!sellerIds.includes(product.boutique.toString()) && req.user.role !== 'admin') {
+      return res.status(403).json({ success: false, message: 'Ce produit ne vous appartient pas' });
+    }
+
+    review.reponseVendeur = {
+      texte: '',
+      dateReponse: null,
+      vendeur: null
+    };
+
+    await review.save();
+    await review.populate('client', 'nom prenom avatar');
+    await review.populate('produit', 'nom images prix');
+
+    res.json({
+      success: true,
+      message: 'Réponse du vendeur supprimée',
+      data: review
+    });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }

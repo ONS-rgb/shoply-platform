@@ -4,12 +4,20 @@ const {
   createOrder,
   getMyOrders,
   getOrderById,
-  cancelOrder
+  cancelOrder,
+  getSellerOrders,
+  updateSellerOrderStatus,
+  cancelSellerOrder
 } = require('../controllers/orderController');
 const { protect, authorize } = require('../middleware/auth');
 
-// Toutes les routes de commande : client connecté
+// Toutes les routes de commande : utilisateur connecté
 router.use(protect);
+
+// Routes Vendeur (placées avant /:id)
+router.get('/seller', authorize('vendeur', 'admin'), getSellerOrders);
+router.put('/seller/:id/status', authorize('vendeur', 'admin'), updateSellerOrderStatus);
+router.put('/seller/:id/cancel', authorize('vendeur', 'admin'), cancelSellerOrder);
 
 router.route('/')
   .post(authorize('client'), createOrder)

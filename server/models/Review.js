@@ -30,6 +30,11 @@ const reviewSchema = new mongoose.Schema({
   achatVerifie: {
     type: Boolean,
     default: false
+  },
+  reponseVendeur: {
+    texte: { type: String, trim: true, default: '' },
+    dateReponse: { type: Date },
+    vendeur: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }
   }
 }, { timestamps: true });
 

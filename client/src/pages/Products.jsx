@@ -14,6 +14,7 @@ export default function Products() {
   const initialMin = params.get('minPrice') || '';
   const initialMax = params.get('maxPrice') || '';
   const initialSort = params.get('sort') || 'newest';
+  const boutique = params.get('boutique') || '';
 
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -43,6 +44,7 @@ export default function Products() {
       if (maxPrice) q.maxPrice = maxPrice;
       if (inStockOnly) q.inStock = 'true';
       if (sortBy) q.sort = sortBy;
+      if (boutique) q.boutique = boutique;
 
       const { data } = await api.get('/products', { params: q });
       setProducts(data.data || []);
@@ -55,7 +57,7 @@ export default function Products() {
 
   useEffect(() => {
     fetchProducts();
-  }, [selectedCat, search, inStockOnly, sortBy]);
+  }, [selectedCat, search, inStockOnly, sortBy, boutique]);
 
   const handleApplyPrice = (e) => {
     e.preventDefault();

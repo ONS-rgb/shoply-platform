@@ -25,9 +25,15 @@ export default function Login() {
       const { data } = await api.post('/auth/login', form);
       login(data.data);
 
-      // Retour à la page d'où vient l'utilisateur (ex: accueil après "Commander"),
-      // sinon : vendeur -> ajout produit, client -> accueil
-      navigate(location.state?.from || (data.data.role === 'vendeur' ? '/add-product' : '/'));
+      let redirectPath = '/';
+      if (location.state?.from) {
+        redirectPath = location.state.from;
+      } else if (data.data.role === 'admin') {
+        redirectPath = '/admin';
+      } else if (data.data.role === 'vendeur') {
+        redirectPath = '/seller';
+      }
+      navigate(redirectPath);
     } catch (err) {
       setError(err.response?.data?.message || 'Erreur de connexion');
     } finally {
@@ -97,6 +103,52 @@ export default function Login() {
             {loading ? 'Connexion...' : 'Se connecter'}
           </button>
         </form>
+
+        {/* Boutons de remplissage rapide pour test */}
+        <div style={{
+          marginTop: 24,
+          padding: '12px 14px',
+          background: '#f8fafc',
+          borderRadius: 8,
+          border: '1px solid #e2e8f0',
+          fontSize: 13
+        }}>
+          <div style={{ color: '#64748b', fontWeight: 600, marginBottom: 8 }}>
+            Comptes de test rapides :
+          </div>
+          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+            <button
+              type="button"
+              onClick={() => setForm({ email: 'client@shoply.tn', motDePasse: 'Client123456!' })}
+              style={{
+                padding: '6px 10px', background: '#e0f2fe', color: '#0369a1',
+                border: '1px solid #bae6fd', borderRadius: 6, cursor: 'pointer', fontSize: 12, fontWeight: 600
+              }}
+            >
+              👤 Client
+            </button>
+            <button
+              type="button"
+              onClick={() => setForm({ email: 'vendeur@shoply.tn', motDePasse: 'Vendeur123456!' })}
+              style={{
+                padding: '6px 10px', background: '#fef3c7', color: '#92400e',
+                border: '1px solid #fde68a', borderRadius: 6, cursor: 'pointer', fontSize: 12, fontWeight: 600
+              }}
+            >
+              🏪 Vendeur
+            </button>
+            <button
+              type="button"
+              onClick={() => setForm({ email: 'admin@shoply.tn', motDePasse: 'Admin123456!' })}
+              style={{
+                padding: '6px 10px', background: '#fee2e2', color: '#991b1b',
+                border: '1px solid #fecaca', borderRadius: 6, cursor: 'pointer', fontSize: 12, fontWeight: 600
+              }}
+            >
+              👑 Admin
+            </button>
+          </div>
+        </div>
 
         <p style={{ textAlign: 'center', marginTop: 25, color: '#6b7280', fontSize: 14 }}>
           Pas encore de compte ?{' '}

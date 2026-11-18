@@ -12,9 +12,17 @@ const notificationRoutes = require('./routes/notificationRoutes');
 const refundRoutes = require('./routes/refundRoutes');
 const shopRoutes = require('./routes/shopRoutes');
 const uploadRoutes = require('./routes/uploadRoutes');
+const stockRoutes = require('./routes/stockRoutes');
+const statsRoutes = require('./routes/statsRoutes');
+const adminRoutes = require('./routes/adminRoutes');
+const categoryRoutes = require('./routes/categoryRoutes');
+const reclamationRoutes = require('./routes/reclamationRoutes');
 
 dotenv.config();
-connectDB();
+connectDB().catch((err) => {
+  console.error('⚠️ Impossible d\'établir la connexion initiale avec MongoDB :', err.message);
+  console.error('💡 Conseil : Vérifiez que l\'accès réseau 0.0.0.0/0 est bien activé dans MongoDB Atlas (Security > Network Access).');
+});
 
 const app = express();
 
@@ -35,6 +43,11 @@ app.use('/api/notifications', notificationRoutes);
 app.use('/api/refunds', refundRoutes);
 app.use('/api/shops', shopRoutes);
 app.use('/api/upload', uploadRoutes);
+app.use('/api/stocks', stockRoutes);
+app.use('/api/stats', statsRoutes);
+app.use('/api/admin', adminRoutes);
+app.use('/api/categories', categoryRoutes);
+app.use('/api/reclamations', reclamationRoutes);
 
 app.get('/', (req, res) => {
   res.json({ message: 'API E-commerce active', status: 'OK' });
